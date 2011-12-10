@@ -1,0 +1,239 @@
+generic.mk:
+
+OVERVIEW:
+
+    The generic.mk system isolates build environment complexity from
+    the Makefile of individual software components. If you are
+    familiar with automake, you can think of generic.mk as automake
+    but without the intermediate step.
+    
+    The generic.mk include file is designed to be included by
+    a Makefile in a source directory. The software component Makefile
+    should set a few simple variables (described below) and then
+    include generic.mk. When the user types make, the build rules are
+    generated dynamically based on the simple variables that the user
+    sets in the software component Makefile.
+
+USAGE:
+    To create a generic.mk based Makefile, start with the following
+    snipit of code at the end of your makefile.
+
+-----------------------------------------------------------------------
+# Needs to be after attributes and before other targets
+include $(shell scmake --loc generic.mk)generic.mk
+-----------------------------------------------------------------------
+
+RULES:
+
+    No outside sources:
+        Do not refer to sources outside of the project. (i.e.
+        /sicortex). This violates future reproducibility
+        (configuration management).
+
+    No absolute paths:
+        Do not use absolute paths to sources and don't assume the
+        current structure of scx1000/trunk. Instead, to represent
+        a dependency on another component use OBJ_DEPS (described
+        below). This allows the components of the project to be
+        restructured depending on where they are being built (vtest,
+        cmProject, standalone). For example cmProject will override
+        OBJ_DEPS depending on how the user defined the project
+        structure.
+
+    Do not reach past your Makefile for sources:
+        Source files should not have #include statments that reach up
+        into the directory hierarchy past their own Makefile. Another
+        way of describing this is that you may only assume the
+        directory structure from your own Makefile and on down. The
+        OBJ_DEPS variables contain search paths relative to the top of
+        the project object/build directory. The OBJ_DEPS variable is
+        overridden by higher level build facilities so you can encode
+        default structure assumptions in OBJ_DEPS but nowhere else.
+
+    Do not reach past your Makefile for intermediate objects:
+        You should not use (or create dependencies on) intermediate
+        build objects that were created by a different Makefile (such
+        as *.o files or generated source files). The only thing you
+        should reach past your own Makefile for are libraries (*.a,
+        *.so) or for executable programs and this should only be done
+        via the OBJ_DEPS mechanism.
+
+VARIABLE ATTRIBUTES:
+    
+    At least one of the following program list variables must be set.
+    These variables define target programs for generic.mk to build.
+    Each variable defines different default flags and link options for
+    the programs/targets that are in its list.
+
+    PROGS = [<path>/]<name> ...
+        Specifies programs to be built with normal executable options.
+        The output program will be <path>/<name> under the build
+        directory.
+
+    ANTHRAX_PROGS = [<path>/]<name> ...
+        Specifies programs to be built as anthrax standalone programs
+        for loading in various simulator models. These programs will
+        be linked against libanthrax. The final objects will be
+        created relative to the build directory as <path>/<name>.srec
+        and <path>/<name>.elf for use in sc1 and simx respectively.
+
+    STATIC_LIBS = [<path>/]<name> ...
+        Specifies static libraries to build. The output file will be
+        named <path>/lib<name>.a relative to the build directory.
+
+    SHARED_LIBS = [<path>/]<name> ...
+        Specifies shared libraries to build. The output file will be
+        named <path>/lib<name>.so relative to the build directory.
+
+    BINARY_FILES = [<path>/]<name>.bin ...
+        Specifies binary files to copy to the build directory. The
+        output file will be named <path>/<name> (without the .bin
+        suffix) relative to the build directory.
+
+    POD_MANPAGES = [<path>/]<name>.<section> ...
+        Specifies manpages to be built and installed. generic.mk
+        builds the manpage from a <name>.pod source via the
+        pod2man program.
+
+    For each target listed above except for BINARY_FILES and
+    POD_MANPAGES, you must include the following variable.
+
+    [<path>/]<name>_SRCS = [<path>/]<file> ...
+        Specifies source files to compile for program <path>/<name>.
+        The <path>/<name> must match the name given in the program
+        list. If the source file contains a path then this is where
+        the source file should be found from the based of the source
+        directory. When the source file is compiled, the object file
+        generated will be created in the same path relative to the
+        build directory. The path for a file may be specified even if
+        no path was used to specify the main program and vice versa.
+
+        Supported extensions: .c, .cpp, .s (.C and .S are not
+        currently supported)
+
+    The following variables are optional.
+
+    BUILDLIST = [<path>/]<name>
+        Specifies the list of programs to build automatically when the
+        "all" default target is requested. The <path>/<name> must
+        match the name given in the program list. If this variable is
+        not set then it defaults to a concatenation of all the program
+        list variables.
+
+    ASFLAGS  = <asflag> ...
+    CFLAGS   = <cflag> ...
+    CXXFLAGS = <cxxflag> ...
+        Global compile flags that apply to compile/assembly of every
+        source file specified in this Makefile (or any included by it).
+
+    LDFLAGS = <ldflag> ...
+        Global linker that apply to the link stage for
+        every program specified in the program list variables.
+
+    USE_DIS [ = 1 ]
+        Generate disassembly for standalone programs.
+        (ANTRHAX_PROGS, L2_ANTHRAX_PROGS and BOOT_PROGS)
+
+    [<path>/]<name>_ASFLAGS  = <asflag> ...
+    [<path>/]<name>_CFLAGS   = <cflag> ...
+    [<path>/]<name>_CXXFLAGS = <cxxflag> ...
+        Compile flags specific to a single program. Each source file
+        owned by [<path>/]<name> will be compiled/assembled using
+        these flags.
+
+    [<path>/]<name>_LDFLAGS = <ldflag> ...
+        LDFLAGS to use for linking program <path>/<name>.
+    
+    [<path>/]<file>_ASFLAGS  = <asflag> ...
+    [<path>/]<file>_CFLAGS   = <cflag> ...
+    [<path>/]<file>_CXXFLAGS = <cxxflag> ...
+        Compile flags specific to a single source file.
+
+    [<path>/]<name>_LIBS: <library> ...
+        Library file that this program should depend on (in the make
+        dependency sense). This will add -l<library> to the link line
+        for [<path>/]<name> and also create a dependency on
+        lib<library>.a. Note that programs in the ANTHRAX_PROGS
+        program list automatically have a dependency the anthrax
+        library.
+
+    OBJ_DEPS = <path>
+        Specify object dependencies on other directories. <path> is
+        relative to the top build directory of the project. Sets
+        VPATH, -L paths and -I paths. You should only use this for
+        dependencies on final objects such as libraries or
+        executables.
+
+    SRC_DEPS = <path> ...
+        This should only be used for debugging purpose, NOT for
+        shipping/packaged code. Current uses should be cleaned up.
+        SRC_DEPS specifies source dependencies on other directories.
+        For components that live under the standard scx1000/trunk repo
+        location <path> should be relative to scx1000/trunk. For
+        components that live elsewhere, the SRC_DEPS should be set to
+        the most common check-out path from the top of a project
+        directory. Sets VPATH and -I paths.
+
+    ALL_OBJS = <file> ...
+        The generic.mk dynamic "clean" rule will automatically clean
+        up objects that were defined using the normal mechanisms. If
+        you have custom rules that generate files, you should add
+        these generated files to the ALL_OBJS list so that they also get
+        removed during clean.
+
+    The following variables affect the which compiler and the compiler
+    mode for the all the programs specified in this makefile.
+
+    ARCH = mips | mips_n32 | mips_n64 | x86_64 | x86
+
+    PREFIX = <compiler_prefix>
+        If ARCH is mips*, then the compiler prefix defaults to "sc".
+        If the ARCH is x86* then the default prefix is blank.
+
+CUSTOM TARGETS/RULES:
+
+    If you need to define custom make targets for certain objects,
+    they should occur after the include of generic.mk. For example, if
+    you are using a source file that is programatically generated from
+    a data file, you should add the source file name to the list of
+    sources for your program. Then define a target for that source
+    file. The varialbes $(srcdir) and $(builddir) should be used if
+    you need access to other objects in the source or build dir.
+
+    Do not forget to add files that are generated by custom rules to
+    the ALL_OBJS list.
+
+
+Example generic.mk based Makefile:
+-------------------------------------------------------------
+ANTHRAX_PROGS = simple
+
+STATIC_LIBS = blah
+
+PROGS = complex another
+
+# Super simple
+simple_SRCS = simple.c
+
+# Two source files
+blah_SRCS = blah.c blah-funcs.c
+
+# Generated sources and files from subdirectories
+complex_SRCS = complex_srcs/main.c complex_srcs/funcs.c complex_srcs/init.s complex_srcs/utils.s
+complex_SRCS += complex_srcs/generated.c
+complex_srcs/funcs.c_CFLAGS = -Dsomevar=somevalue
+complex_LIBS = blah
+
+# another.c is local, ScxUtil.cpp comes from sw/include/ice9_internal/ (see SRC_DEPS)
+another_SRCS = another.c ScxUtil.cpp
+
+SRC_DEPS = sw/include/ice9_internal
+
+# Needs to be after attributes and before other targets
+include $(shell scmake --loc generic.mk)generic.mk
+
+ALL_OBJS += complex_srcs/generated.c
+
+complex_srcs/generated.c:
+	$(srcdir)/somescript $(srcdir)/complex_srcs/somedata.txt -o $@
+----------------------------------------------------------------
