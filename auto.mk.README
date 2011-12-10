@@ -1,26 +1,26 @@
-generic.mk:
+auto.mk: Simpler makefiles.
 
 OVERVIEW:
 
-    The generic.mk system isolates build environment complexity from
-    the Makefile of individual software components. If you are
-    familiar with automake, you can think of generic.mk as automake
-    but without the intermediate step.
+    The auto.mk system isolates build environment complexity from the
+    Makefile of individual software components. If you are familiar
+    with automake, you can think of auto.mk as automake but without
+    the intermediate step.
     
-    The generic.mk include file is designed to be included by
-    a Makefile in a source directory. The software component Makefile
-    should set a few simple variables (described below) and then
-    include generic.mk. When the user types make, the build rules are
-    generated dynamically based on the simple variables that the user
-    sets in the software component Makefile.
+    The auto.mk include file is designed to be included by a Makefile
+    in a source directory. The software component Makefile should set
+    a few simple variables (described below) and then include auto.mk.
+    When the user types make, the build rules are generated
+    dynamically based on the simple variables that the user sets in
+    the software component Makefile.
 
 USAGE:
-    To create a generic.mk based Makefile, start with the following
+    To create a auto.mk based Makefile, start with the following
     snipit of code at the end of your makefile.
 
 -----------------------------------------------------------------------
 # Needs to be after attributes and before other targets
-include $(shell scmake --loc generic.mk)generic.mk
+include auto.mk
 -----------------------------------------------------------------------
 
 RULES:
@@ -61,9 +61,9 @@ RULES:
 VARIABLE ATTRIBUTES:
     
     At least one of the following program list variables must be set.
-    These variables define target programs for generic.mk to build.
-    Each variable defines different default flags and link options for
-    the programs/targets that are in its list.
+    These variables define target programs for auto.mk to build. Each
+    variable defines different default flags and link options for the
+    programs/targets that are in its list.
 
     PROGS = [<path>/]<name> ...
         Specifies programs to be built with normal executable options.
@@ -91,9 +91,8 @@ VARIABLE ATTRIBUTES:
         suffix) relative to the build directory.
 
     POD_MANPAGES = [<path>/]<name>.<section> ...
-        Specifies manpages to be built and installed. generic.mk
-        builds the manpage from a <name>.pod source via the
-        pod2man program.
+        Specifies manpages to be built and installed. auto.mk builds
+        the manpage from a <name>.pod source via the pod2man program.
 
     For each target listed above except for BINARY_FILES and
     POD_MANPAGES, you must include the following variable.
@@ -175,10 +174,10 @@ VARIABLE ATTRIBUTES:
         directory. Sets VPATH and -I paths.
 
     ALL_OBJS = <file> ...
-        The generic.mk dynamic "clean" rule will automatically clean
-        up objects that were defined using the normal mechanisms. If
-        you have custom rules that generate files, you should add
-        these generated files to the ALL_OBJS list so that they also get
+        The auto.mk dynamic "clean" rule will automatically clean up
+        objects that were defined using the normal mechanisms. If you
+        have custom rules that generate files, you should add these
+        generated files to the ALL_OBJS list so that they also get
         removed during clean.
 
     The following variables affect the which compiler and the compiler
@@ -193,7 +192,7 @@ VARIABLE ATTRIBUTES:
 CUSTOM TARGETS/RULES:
 
     If you need to define custom make targets for certain objects,
-    they should occur after the include of generic.mk. For example, if
+    they should occur after the include of auto.mk. For example, if
     you are using a source file that is programatically generated from
     a data file, you should add the source file name to the list of
     sources for your program. Then define a target for that source
@@ -204,7 +203,7 @@ CUSTOM TARGETS/RULES:
     the ALL_OBJS list.
 
 
-Example generic.mk based Makefile:
+Example auto.mk based Makefile:
 -------------------------------------------------------------
 ANTHRAX_PROGS = simple
 
@@ -230,7 +229,7 @@ another_SRCS = another.c ScxUtil.cpp
 SRC_DEPS = sw/include/ice9_internal
 
 # Needs to be after attributes and before other targets
-include $(shell scmake --loc generic.mk)generic.mk
+include auto.mk
 
 ALL_OBJS += complex_srcs/generated.c
 

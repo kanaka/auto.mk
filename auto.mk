@@ -1,9 +1,9 @@
 #####################################################################
-# generic.mk: simpler make files. Sort of like automake without the
-# intermediate steps.
+# auto.mk:
+# Simpler makefiles: auto.mk without automake.
 #
-# Include this makefile in software Makefiles. See generic.mk.README
-# for more information.
+# Include this makefile in software Makefiles. See auto.mk.README for
+# more information.
 #
 # Copyright (c) 2008 SiCortex, Inc
 # Created by Joel Martin: <joel.martin@sicortex.com>
@@ -68,7 +68,7 @@ AR_FOR_BUILD = ar
 #####################################################################
 
 # Default to mips unless overridden
-ARCH ?= mips64el
+ARCH ?= x86_64
 
 ifneq ($(filter mips%,$(ARCH)),)
   # MIPS architecture
@@ -290,7 +290,7 @@ showVars :
 	@echo "_FULLLIST: $(foreach X,$(_FULLLIST),$(X))"
 
 help:
-	@$${PAGER:-less} $(filter %generic.mk,$(MAKEFILE_LIST)).README
+	@$${PAGER:-less} $(filter %auto.mk,$(MAKEFILE_LIST)).README
 
 clean:
 	rm -f $(ALL_OBJS) $(_DEPFILES) $(foreach X,$(STATIC_LIBS),lib$(X).a) \
