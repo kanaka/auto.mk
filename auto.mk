@@ -264,7 +264,7 @@ define _doOBJS
 endef
 $(foreach X,$(_FULLLIST) $(_FOR_BUILD_LIST),$(eval $(call _doOBJS,$(X))))
 
-ALL_OBJS = $(sort $(_tOBJS))
+ALL_OBJS = $(sort $(_tOBJS)) $(EXTRA_OBJS)
 _DEPFILES = $(ALL_OBJS:.o=.d)
 
 # Force sources to local directory or include locations
